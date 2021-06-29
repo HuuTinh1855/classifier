@@ -75,9 +75,13 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_ince
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
 
             # deep copy the model
+            if epoch % 50 == 0 and epoch != 0:
+                torch.save(model.state_dict(), '/content/drive/MyDrive/alexnet_{}.pt'.format(epoch))
+                # deep copy the model
             if phase == 'Test' and epoch_acc > best_acc:
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
+                torch.save(best_model_wts, '/content/drive/MyDrive/alexnet_{}_{}.pt'.format(epoch, 'best'))
             if phase == 'Test':
                 val_acc_history.append(epoch_acc)
 
