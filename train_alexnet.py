@@ -24,8 +24,8 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_ince
         print('-' * 10)
 
         # Each epoch has a training and validation phase
-        for phase in ['train', 'val']:
-            if phase == 'train':
+        for phase in ['Train', 'Test']:
+            if phase == 'Train':
                 model.train()  # Set model to training mode
             else:
                 model.eval()   # Set model to evaluate mode
@@ -43,12 +43,12 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_ince
 
                 # forward
                 # track history if only in train
-                with torch.set_grad_enabled(phase == 'train'):
+                with torch.set_grad_enabled(phase == 'Train'):
                     # Get model outputs and calculate loss
                     # Special case for inception because in training it has an auxiliary output. In train
                     #   mode we calculate the loss by summing the final output and the auxiliary output
                     #   but in testing we only consider the final output.
-                    if is_inception and phase == 'train':
+                    if is_inception and phase == 'Train':
                         # From https://discuss.pytorch.org/t/how-to-optimize-inception-model-with-auxiliary-classifiers/7958
                         outputs, aux_outputs = model(inputs)
                         loss1 = criterion(outputs, labels)
@@ -61,7 +61,7 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_ince
                     _, preds = torch.max(outputs, 1)
 
                     # backward + optimize only if in training phase
-                    if phase == 'train':
+                    if phase == 'Train':
                         loss.backward()
                         optimizer.step()
 
@@ -75,10 +75,10 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_ince
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
 
             # deep copy the model
-            if phase == 'val' and epoch_acc > best_acc:
+            if phase == 'Test' and epoch_acc > best_acc:
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
-            if phase == 'val':
+            if phase == 'Test':
                 val_acc_history.append(epoch_acc)
 
         print()
@@ -175,7 +175,7 @@ if __name__ == '__main__':
 
     # Top level data directory. Here we assume the format of the directory conforms
     #   to the ImageFolder structure
-    data_dir = "./data/hymenoptera_data"
+    data_dir = "/content/drive/MyDrive/data/"
 
     # Models to choose from [resnet, alexnet, vgg, squeezenet, densenet, inception]
     model_name = "alexnet"
@@ -187,7 +187,7 @@ if __name__ == '__main__':
     batch_size = 8
 
     # Number of epochs to train for
-    num_epochs = 15
+    num_epochs = 100
 
     # Flag for feature extracting. When False, we finetune the whole model,
     #   when True we only update the reshaped layer params
@@ -202,13 +202,13 @@ if __name__ == '__main__':
     # Data augmentation and normalization for training
     # Just normalization for validation
     data_transforms = {
-        'train': transforms.Compose([
+        'Train': transforms.Compose([
             transforms.RandomResizedCrop(input_size),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
-        'val': transforms.Compose([
+        'Test': transforms.Compose([
             transforms.Resize(input_size),
             transforms.CenterCrop(input_size),
             transforms.ToTensor(),
@@ -219,11 +219,11 @@ if __name__ == '__main__':
     print("Initializing Datasets and Dataloaders...")
 
     # Create training and validation datasets
-    image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x), data_transforms[x]) for x in ['train', 'val']}
+    image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x), data_transforms[x]) for x in ['Train', 'Test']}
     # Create training and validation dataloaders
     dataloaders_dict = {
         x: torch.utils.data.DataLoader(image_datasets[x], batch_size=batch_size, shuffle=True, num_workers=4) for x in
-        ['train', 'val']}
+        ['Train', 'Test']}
 
     # Detect if we have a GPU available
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
